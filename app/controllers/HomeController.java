@@ -20,4 +20,9 @@ public class HomeController extends Controller {
         return ok(index.render("Hello world"));
     }
 
+    public Result power(int x, int y) {
+        int total = (int)Math.pow(x, y);
+        return ok(Integer.toString(total));
+    }
+
 }
