@@ -3,13 +3,17 @@ package controllers;
 import javax.inject.Inject;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.w3c.dom.Document;
+
 import play.core.j.HttpExecutionContext;
+import play.libs.Json;
 import play.mvc.*;
 import play.libs.ws.*;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import scala.concurrent.ExecutionContextExecutor;
 import views.html.*;
 
 /**
@@ -24,7 +28,8 @@ public class HomeController extends Controller {
      * this method will be called when the application receives a
      * <code>GET</code> request with a path of <code>/</code>.
      */
-    @Inject WSClient ws;
+    @Inject
+    WSClient ws;
     //@Inject HttpExecutionContext ec;
 
     public Result index() {
@@ -37,18 +42,41 @@ public class HomeController extends Controller {
     }
 
     public CompletionStage<Result> suggestcat(int code) {
-        String wsUrl = "https://maps.googleapis.com/maps/api/geocode/json?region=za&address=" + code;
+//        CompletionStage<Document> catResult = getCats();
+//        CompletionStage<JsonNode> mapResult = getAddressDetail(code);
+//
+//        CompletionStage<Result> promiseOfResult = mapResult.thenApply(node ->
+//                ok("Result: " + node)
+//        );
+//        return promiseOfResult;
 
-        WSRequest request = ws.url(wsUrl);
-        //CompletionStage<WSResponse> responsePromise = request.get();
+        return CompletableFuture.supplyAsync(() -> getAddressDetail(code))
+                .thenApply(i -> ok("Got result: " + i));
+    }
 
-        //CompletionStage<JsonNode> jsonPromise = ws.url(wsUrl).get()
-        //       .thenApply(WSResponse::asJson);
+    private String getMapData(String code) {
 
-        //String result = jsonPromise.toString();
+        String gmapUrl = "https://maps.googleapis.com/maps/api/geocode/json?region=za&address=" + code;
+        WSRequest request = ws.url(gmapUrl);
+
+        CompletionStage<WSResponse> mapResult = request.get();
+
+        return "gMap";
+    }
+
+    private CompletionStage<WSResponse> getAddressDetail(int code) {
+        String gmapUrl = "https://maps.googleapis.com/maps/api/geocode/json?region=za&address=" + code;
+        WSRequest request = ws.url(gmapUrl);
+
+        return request.get();
+    }
+
+    private CompletionStage<Document> getCats() {
+        String catUrl = "http://thecatapi.com/api/images/get?format=xml&results_per_page=200";
+        WSRequest request = ws.url(catUrl);
 
         return request.get().thenApply(response ->
-                ok("Feed title: " + response.asJson())
+                response.asXml()
         );
     }
 }
